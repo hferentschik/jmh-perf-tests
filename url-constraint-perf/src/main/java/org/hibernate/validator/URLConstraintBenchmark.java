@@ -39,6 +39,7 @@ import org.openjdk.jmh.annotations.OutputTimeUnit;
 import org.openjdk.jmh.annotations.Param;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.State;
+import org.openjdk.jmh.annotations.Warmup;
 import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
@@ -48,13 +49,13 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 @Measurement(iterations = 100)
 
 // sample time
-//@BenchmarkMode(Mode.SampleTime)
-//@Warmup(iterations = 3)
-//@Measurement(iterations = 1, time = 1, timeUnit = TimeUnit.SECONDS)
+//@BenchmarkMode(Mode.AverageTime)
+//@Warmup(iterations = 1)
+//@Measurement(iterations = 10)
 
 // general
 @OutputTimeUnit(TimeUnit.MICROSECONDS)
-@Fork(10)
+@Fork(1)
 public class URLConstraintBenchmark {
 
 	private static final Pattern URL_REGEX = Pattern
