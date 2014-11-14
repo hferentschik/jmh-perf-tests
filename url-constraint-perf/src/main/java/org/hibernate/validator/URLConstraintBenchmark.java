@@ -32,6 +32,7 @@ import java.util.regex.Pattern;
 
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
+import org.openjdk.jmh.annotations.CompilerControl;
 import org.openjdk.jmh.annotations.Fork;
 import org.openjdk.jmh.annotations.Measurement;
 import org.openjdk.jmh.annotations.Mode;
@@ -39,10 +40,11 @@ import org.openjdk.jmh.annotations.OutputTimeUnit;
 import org.openjdk.jmh.annotations.Param;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.State;
-import org.openjdk.jmh.annotations.Warmup;
+import org.openjdk.jmh.infra.Blackhole;
 import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
+
 
 // single shot time
 @BenchmarkMode(Mode.SingleShotTime)
@@ -82,7 +84,6 @@ public class URLConstraintBenchmark {
 
 	@State(Scope.Benchmark)
 	public static class ValidateByURLConstructor {
-
 		public boolean isValid(String urlAsString) {
 			boolean isValid;
 			try {
@@ -92,18 +93,14 @@ public class URLConstraintBenchmark {
 			catch ( MalformedURLException e ) {
 				isValid = false;
 			}
-//			System.out.println( urlAsString + " is valid: " + isValid );
 			return isValid;
 		}
 	}
 
 	@State(Scope.Benchmark)
 	public static class ValidateByRegExp {
-
 		public boolean isValid(String urlAsString) {
-			boolean isValid = URL_REGEX.matcher( urlAsString ).matches();
-//			System.out.println( urlAsString + " is valid: " + isValid );
-			return isValid;
+			return URL_REGEX.matcher( urlAsString ).matches();
 		}
 	}
 
@@ -117,11 +114,17 @@ public class URLConstraintBenchmark {
 		return validator.isValid( urlHolder.url );
 	}
 
+	@Benchmark
+	@Fork(jvmArgs = "-XX:MaxJavaStackTraceDepth=6")
+	public Object measureValidationUsingURLConstructorReducedStackTraceDepth(ValidateByURLConstructor validator, URLHolder urlHolder) {
+		return validator.isValid( urlHolder.url );
+	}
+
 	public static void main(String[] args) throws Exception {
 		Options opt = new OptionsBuilder()
 				.include( ".*" + URLConstraintBenchmark.class.getSimpleName() + ".*" )
 				.mode( Mode.SingleShotTime )
-				.forks( 3 )
+				.forks( 1 )
 				.measurementBatchSize( 10 )
 				.timeUnit( TimeUnit.MICROSECONDS )
 				.build();
