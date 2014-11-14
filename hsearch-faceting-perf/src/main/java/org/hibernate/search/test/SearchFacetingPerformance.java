@@ -32,9 +32,10 @@ import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.Version;
+import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
-import org.openjdk.jmh.annotations.GenerateMicroBenchmark;
+import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Measurement;
 import org.openjdk.jmh.annotations.Mode;
 import org.openjdk.jmh.annotations.OutputTimeUnit;
@@ -96,7 +97,7 @@ public class SearchFacetingPerformance {
 		sessionFactory.close();
 	}
 
-	@GenerateMicroBenchmark
+	@Benchmark
 	public void hsearchFaceting() {
 		FullTextSession fullTextSession = Search.getFullTextSession( sessionFactory.openSession() );
 
@@ -120,7 +121,7 @@ public class SearchFacetingPerformance {
 		fullTextSession.close();
 	}
 
-	@GenerateMicroBenchmark
+	@Benchmark
 	public void luceneFaceting() throws Exception {
 		// setup the facets
 		List<FacetRequest> facetRequests = new ArrayList<FacetRequest>();
