@@ -32,7 +32,6 @@ import java.util.regex.Pattern;
 
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
-import org.openjdk.jmh.annotations.CompilerControl;
 import org.openjdk.jmh.annotations.Fork;
 import org.openjdk.jmh.annotations.Measurement;
 import org.openjdk.jmh.annotations.Mode;
@@ -40,24 +39,16 @@ import org.openjdk.jmh.annotations.OutputTimeUnit;
 import org.openjdk.jmh.annotations.Param;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.State;
-import org.openjdk.jmh.infra.Blackhole;
+import org.openjdk.jmh.annotations.Warmup;
 import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 
-
-// single shot time
-@BenchmarkMode(Mode.SingleShotTime)
-@Measurement(iterations = 100)
-
-// sample time
-//@BenchmarkMode(Mode.AverageTime)
-//@Warmup(iterations = 1)
-//@Measurement(iterations = 10)
-
-// general
-@OutputTimeUnit(TimeUnit.MICROSECONDS)
-@Fork(1)
+@BenchmarkMode(Mode.AverageTime)
+@Warmup(iterations = 1)
+@Measurement(iterations = 2)
+@OutputTimeUnit(TimeUnit.NANOSECONDS)
+@SuppressWarnings("unused")
 public class URLConstraintBenchmark {
 
 	private static final Pattern URL_REGEX = Pattern
@@ -105,28 +96,41 @@ public class URLConstraintBenchmark {
 	}
 
 	@Benchmark
-	public boolean measureValidationUsingURLConstructor(ValidateByURLConstructor validator, URLHolder urlHolder) {
+	@Fork(1)
+	public boolean regExp(ValidateByRegExp validator, URLHolder urlHolder) {
 		return validator.isValid( urlHolder.url );
 	}
 
 	@Benchmark
-	public boolean measureValidationUsingRegExp(ValidateByRegExp validator, URLHolder urlHolder) {
+	@Fork(1)
+	public boolean urlConstructor(ValidateByURLConstructor validator, URLHolder urlHolder) {
 		return validator.isValid( urlHolder.url );
 	}
 
 	@Benchmark
-	@Fork(jvmArgs = "-XX:MaxJavaStackTraceDepth=6")
-	public Object measureValidationUsingURLConstructorReducedStackTraceDepth(ValidateByURLConstructor validator, URLHolder urlHolder) {
+	@Fork(value = 1, jvmArgs = "-XX:MaxJavaStackTraceDepth=6")
+	public Object urlConstructorReducedStackTraceDepth(ValidateByURLConstructor validator, URLHolder urlHolder) {
+		return validator.isValid( urlHolder.url );
+	}
+
+	// only working with a patched version of JMH which does not inspect the stack trace in Blackhole constructor
+	// to avoid direct instantiation
+//	@Benchmark
+//	@Fork(value = 1, jvmArgs = "-XX:-StackTraceInThrowable")
+//	public Object urlConstructorNoStackTraces(ValidateByURLConstructor validator, URLHolder urlHolder) {
+//		return validator.isValid( urlHolder.url );
+//	}
+
+	@Benchmark
+	@Fork(value = 1, jvmArgs = "-XX:+PrintCompilation")
+	public Object urlConstructorPrintCompilation(ValidateByURLConstructor validator,
+			URLHolder urlHolder) {
 		return validator.isValid( urlHolder.url );
 	}
 
 	public static void main(String[] args) throws Exception {
 		Options opt = new OptionsBuilder()
 				.include( ".*" + URLConstraintBenchmark.class.getSimpleName() + ".*" )
-				.mode( Mode.SingleShotTime )
-				.forks( 1 )
-				.measurementBatchSize( 10 )
-				.timeUnit( TimeUnit.MICROSECONDS )
 				.build();
 		new Runner( opt ).run();
 	}
