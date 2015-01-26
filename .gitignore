@@ -8,4 +8,11 @@ target
 # Intellij Idea
 *.iml
 .idea
+hsearch-lucene
+native-lucene
 
+# Ruby
+.ruby-gemset
+.ruby-version
+
+isbndb/*.sql

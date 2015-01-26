@@ -1,3 +1,3 @@
-JMH microbenchmarks for my work on Hibernate projects. Experimantal!
+JMH microbenchmarks for my work on Hibernate projects. Experimental!
 
 ...

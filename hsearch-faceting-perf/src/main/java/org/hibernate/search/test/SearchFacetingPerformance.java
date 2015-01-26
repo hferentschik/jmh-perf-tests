@@ -163,7 +163,7 @@ public class SearchFacetingPerformance {
 		SearchFacetingPerformance performance = new SearchFacetingPerformance();
 		try {
 			performance.setUp();
-			performance.hsearchFaceting();
+//			performance.hsearchFaceting();
 			performance.luceneFaceting();
 			performance.tearDown();
 		}
@@ -185,7 +185,7 @@ public class SearchFacetingPerformance {
 
 		cfg.setProperty( Environment.DIALECT, "org.hibernate.dialect.MySQL5InnoDBDialect" );
 		cfg.setProperty( Environment.DRIVER, "com.mysql.jdbc.Driver" );
-		cfg.setProperty( Environment.URL, "jdbc:mysql://localhost/hibernate" );
+		cfg.setProperty( Environment.URL, "jdbc:mysql://localhost/books" );
 		cfg.setProperty( Environment.USER, "hibernate" );
 		cfg.setProperty( Environment.PASS, "hibernate" );
 
