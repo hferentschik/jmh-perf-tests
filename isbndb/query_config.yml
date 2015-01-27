@@ -1,16 +1,26 @@
 ---
 jobs:
 - name: Manning
-  status: new
+  status: completed
   pages_downloaded: 91
   query:
     q: Manning
     i: publisher_name
   out: manning-wesley.json
 - name: Addison-Wesley
-  status: new
+  status: completed
   pages_downloaded: 2410
   query:
     q: Addison-Wesley
     i: publisher_name
   out: manning-wesley.json
+- name: Wiley
+  status: new
+  pages_downloaded: 0
+  query:
+    q: Wiley
+    i: publisher_name
+  out: manning-wesley.json
+
+
+

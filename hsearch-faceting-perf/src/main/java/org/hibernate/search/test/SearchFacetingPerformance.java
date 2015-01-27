@@ -2,8 +2,8 @@ package org.hibernate.search.test;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.core.StopAnalyzer;
@@ -12,17 +12,13 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.facet.params.CategoryListParams;
-import org.apache.lucene.facet.params.FacetIndexingParams;
-import org.apache.lucene.facet.params.FacetSearchParams;
-import org.apache.lucene.facet.search.CountFacetRequest;
-import org.apache.lucene.facet.search.FacetRequest;
-import org.apache.lucene.facet.search.FacetResult;
-import org.apache.lucene.facet.search.FacetsCollector;
-import org.apache.lucene.facet.sortedset.SortedSetDocValuesAccumulator;
-import org.apache.lucene.facet.sortedset.SortedSetDocValuesFacetFields;
+import org.apache.lucene.facet.FacetResult;
+import org.apache.lucene.facet.FacetsCollector;
+import org.apache.lucene.facet.FacetsConfig;
+import org.apache.lucene.facet.sortedset.DefaultSortedSetDocValuesReaderState;
+import org.apache.lucene.facet.sortedset.SortedSetDocValuesFacetCounts;
+import org.apache.lucene.facet.sortedset.SortedSetDocValuesFacetField;
 import org.apache.lucene.facet.sortedset.SortedSetDocValuesReaderState;
-import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -34,8 +30,6 @@ import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.Version;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
-import org.openjdk.jmh.annotations.Fork;
-import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Measurement;
 import org.openjdk.jmh.annotations.Mode;
 import org.openjdk.jmh.annotations.OutputTimeUnit;
@@ -43,8 +37,10 @@ import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.TearDown;
-import org.openjdk.jmh.annotations.Threads;
 import org.openjdk.jmh.annotations.Warmup;
+import org.openjdk.jmh.runner.Runner;
+import org.openjdk.jmh.runner.options.Options;
+import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 import org.hibernate.CacheMode;
 import org.hibernate.FlushMode;
@@ -62,22 +58,19 @@ import org.hibernate.search.query.facet.Facet;
 import org.hibernate.search.query.facet.FacetSortOrder;
 import org.hibernate.search.query.facet.FacetingRequest;
 
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 
 @BenchmarkMode(Mode.AverageTime)
-@OutputTimeUnit(MILLISECONDS)
-@Warmup(iterations = 1, time = 1, timeUnit = SECONDS)
-@Measurement(iterations = 2, time = 1, timeUnit = SECONDS)
+@Warmup(iterations = 1)
+@Measurement(iterations = 2)
+@OutputTimeUnit(TimeUnit.MICROSECONDS)
 @State(Scope.Benchmark)
-@Fork(10)
-@Threads(Threads.MAX)
 public class SearchFacetingPerformance {
 	private static final int BATCH_SIZE = 25;
-	private static final String NATIVE_LUCENE_INDEX_DIR = "native-lucene";
-	private static final String HSEARCH_LUCENE_INDEX_DIR = "hsearch-lucene";
+	private static final String NATIVE_LUCENE_INDEX_DIR = "target/native-lucene";
+	private static final String HSEARCH_LUCENE_INDEX_DIR = "target/hsearch-lucene";
 	private static final String AUTHOR_NAME_FACET = "authorNameFacet";
+
 	private SessionFactory sessionFactory;
 	private IndexSearcher searcher;
 
@@ -98,6 +91,7 @@ public class SearchFacetingPerformance {
 	}
 
 	@Benchmark
+	@SuppressWarnings("unused")
 	public void hsearchFaceting() {
 		FullTextSession fullTextSession = Search.getFullTextSession( sessionFactory.openSession() );
 
@@ -122,48 +116,45 @@ public class SearchFacetingPerformance {
 	}
 
 	@Benchmark
+	@SuppressWarnings("unused")
 	public void luceneFaceting() throws Exception {
-		// setup the facets
-		List<FacetRequest> facetRequests = new ArrayList<FacetRequest>();
-		facetRequests.add( new CountFacetRequest( new CategoryPath( "authors.name_untokenized" ), 1 ) );
-		FacetSearchParams facetSearchParams = new FacetSearchParams( new FacetIndexingParams(), facetRequests );
-		SortedSetDocValuesReaderState state = new SortedSetDocValuesReaderState(
-				new FacetIndexingParams( new CategoryListParams( "authors.name_untokenized" ) ),
-				searcher.getIndexReader()
-		);
-		FacetsCollector facetsCollector = FacetsCollector.create(
-				new SortedSetDocValuesAccumulator(
-						state,
-						facetSearchParams
-				)
-		);
+		SortedSetDocValuesReaderState docValuesReaderState =
+				new DefaultSortedSetDocValuesReaderState( searcher.getIndexReader() );
+		FacetsCollector facetsCollector = new FacetsCollector();
 
-		// search
 		searcher.search( new MatchAllDocsQuery(), facetsCollector );
 
-		// get the facet result
-		List<FacetResult> facets = facetsCollector.getFacetResults();
-		assertEquals( "Wrong facet count", 1, facets.size() );
-		FacetResult topFacetResult = facets.get( 0 );
+		// get facet results
+		SortedSetDocValuesFacetCounts facets = new SortedSetDocValuesFacetCounts(
+				docValuesReaderState, facetsCollector
+		);
+		FacetResult topFacetResult = facets.getTopChildren( 10, "authors.name_untokenized" );
 
 		assertEquals(
 				"Wrong facet ",
 				"Bittinger, Marvin L.",
-				topFacetResult.getFacetResultNode().subResults.get( 0 ).label.components[1]
+				topFacetResult.labelValues[0].label
 		);
 		assertEquals(
 				"Wrong facet value count",
 				169,
-				(int) topFacetResult.getFacetResultNode().subResults.get( 0 ).value
+				(int) topFacetResult.labelValues[0].value
 		);
 	}
 
 	// just for testing in the IDE
+//	public static void main(String[] args) throws Exception {
+//		Options opt = new OptionsBuilder()
+//				.include( ".*" + SearchFacetingPerformance.class.getSimpleName() + ".*" )
+//				.build();
+//		new Runner( opt ).run();
+//	}
+
 	public static void main(String args[]) {
 		SearchFacetingPerformance performance = new SearchFacetingPerformance();
 		try {
 			performance.setUp();
-//			performance.hsearchFaceting();
+			performance.hsearchFaceting();
 			performance.luceneFaceting();
 			performance.tearDown();
 		}
@@ -172,6 +163,7 @@ public class SearchFacetingPerformance {
 			e.printStackTrace();
 		}
 	}
+
 
 	private Configuration buildConfiguration() {
 		Configuration cfg = new Configuration();
@@ -194,10 +186,10 @@ public class SearchFacetingPerformance {
 		cfg.setProperty( Environment.FORMAT_SQL, "false" );
 
 		// Search config
-		cfg.setProperty( "hibernate.search.lucene_version", Version.LUCENE_46.name() );
+		cfg.setProperty( "hibernate.search.lucene_version", Version.LUCENE_4_10_3.toString() );
 		cfg.setProperty( "hibernate.search.default.directory_provider", "filesystem" );
 		cfg.setProperty( "hibernate.search.default.indexBase", HSEARCH_LUCENE_INDEX_DIR );
-		cfg.setProperty( org.hibernate.search.Environment.ANALYZER_CLASS, StopAnalyzer.class.getName() );
+		cfg.setProperty( org.hibernate.search.cfg.Environment.ANALYZER_CLASS, StopAnalyzer.class.getName() );
 		cfg.setProperty( "hibernate.search.default.indexwriter.merge_factor", "100" );
 		cfg.setProperty( "hibernate.search.default.indexwriter.max_buffered_docs", "1000" );
 
@@ -238,27 +230,24 @@ public class SearchFacetingPerformance {
 	}
 
 	private void indexBookLucene(IndexWriter writer, Book book) throws Exception {
+		// create the Document
 		Document document = new Document();
+
+		// add the standard fields
 		document.add( new TextField( "title", book.getTitle(), Field.Store.NO ) );
 		document.add( new StringField( "isbn", book.getIsbn(), Field.Store.NO ) );
 		document.add( new StringField( "publisher", book.getPublisher(), Field.Store.NO ) );
-		SortedSetDocValuesFacetFields dvFields = new SortedSetDocValuesFacetFields(
-				new FacetIndexingParams(
-						new CategoryListParams(
-								"authors.name_untokenized"
-						)
-				)
-		);
-		List<CategoryPath> paths = new ArrayList<CategoryPath>();
+
+		// add the dynamic facet fields
+		FacetsConfig config = new FacetsConfig();
+		config.setMultiValued( "authors.name", true );
+
 		for ( Author author : book.getAuthors() ) {
 			String name = author.getName();
 			document.add( new TextField( "authors.name", name, Field.Store.NO ) );
-			paths.add( new CategoryPath( "authors.name_untokenized", name ) );
+			document.add( new SortedSetDocValuesFacetField( "authors.name_untokenized", name ) );
 		}
-		if ( paths.size() > 0 ) {
-			dvFields.addFields( document, paths );
-		}
-		writer.addDocument( document );
+		writer.addDocument( config.build( document ) );
 		writer.commit();
 	}
 
@@ -284,8 +273,8 @@ public class SearchFacetingPerformance {
 		}
 
 		Directory dir = FSDirectory.open( indexDirFile );
-		Analyzer analyzer = new StandardAnalyzer( Version.LUCENE_46 );
-		IndexWriterConfig iwc = new IndexWriterConfig( Version.LUCENE_46, analyzer );
+		Analyzer analyzer = new StandardAnalyzer();
+		IndexWriterConfig iwc = new IndexWriterConfig( Version.LUCENE_4_10_3, analyzer );
 
 		if ( create ) {
 			// Create a new index in the directory, removing any
@@ -295,14 +284,14 @@ public class SearchFacetingPerformance {
 
 		IndexWriter writer = new IndexWriter( dir, iwc );
 		writer.commit();
-		writer.close( true );
+		writer.close();
 	}
 
 	private IndexWriter getIndexWriter() throws Exception {
 		File indexDirFile = new File( NATIVE_LUCENE_INDEX_DIR );
 		Directory dir = FSDirectory.open( indexDirFile );
-		Analyzer analyzer = new StandardAnalyzer( Version.LUCENE_46 );
-		IndexWriterConfig iwc = new IndexWriterConfig( Version.LUCENE_46, analyzer );
+		Analyzer analyzer = new StandardAnalyzer( );
+		IndexWriterConfig iwc = new IndexWriterConfig( Version.LUCENE_4_10_3, analyzer );
 		iwc.setOpenMode( IndexWriterConfig.OpenMode.CREATE_OR_APPEND );
 		return new IndexWriter( dir, iwc );
 	}

@@ -16,3 +16,4 @@ native-lucene
 .ruby-version
 
 isbndb/*.sql
+*.json

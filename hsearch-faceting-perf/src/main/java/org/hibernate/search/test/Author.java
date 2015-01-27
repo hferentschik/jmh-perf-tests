@@ -8,6 +8,7 @@ import org.hibernate.search.annotations.Analyze;
 import org.hibernate.search.annotations.DocumentId;
 import org.hibernate.search.annotations.Field;
 import org.hibernate.search.annotations.Fields;
+import org.hibernate.search.annotations.Store;
 
 @Entity
 public class Author {
@@ -16,7 +17,7 @@ public class Author {
 	@DocumentId
 	private Integer id;
 
-	@Fields({ @Field, @Field(analyze = Analyze.NO, name = "name_untokenized") })
+	@Fields({ @Field(store = Store.YES), @Field(store = Store.YES, analyze = Analyze.NO, name = "name_untokenized") })
 	private String name;
 
 
@@ -34,6 +35,37 @@ public class Author {
 
 	public void setName(String name) {
 		this.name = name;
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if ( this == o ) {
+			return true;
+		}
+		if ( o == null || getClass() != o.getClass() ) {
+			return false;
+		}
+
+		Author author = (Author) o;
+
+		if ( !name.equals( author.name ) ) {
+			return false;
+		}
+
+		return true;
+	}
+
+	@Override
+	public int hashCode() {
+		return name.hashCode();
+	}
+
+	@Override
+	public String toString() {
+		return "Author{" +
+				"id=" + id +
+				", name='" + name + '\'' +
+				'}';
 	}
 }
 

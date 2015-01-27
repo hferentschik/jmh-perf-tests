@@ -14,6 +14,7 @@ import org.hibernate.search.annotations.DocumentId;
 import org.hibernate.search.annotations.Field;
 import org.hibernate.search.annotations.Indexed;
 import org.hibernate.search.annotations.IndexedEmbedded;
+import org.hibernate.search.annotations.Store;
 
 @Entity
 @Indexed
@@ -24,13 +25,13 @@ public class Book {
 	@DocumentId
 	private Integer id;
 
-	@Field
+	@Field(store = Store.YES)
 	private String title;
 
-	@Field(analyze = Analyze.NO)
+	@Field(analyze = Analyze.NO, store = Store.YES)
 	private String isbn;
 
-	@Field(analyze = Analyze.NO)
+	@Field(analyze = Analyze.NO, store = Store.YES)
 	private String publisher;
 
 	@ManyToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
@@ -67,6 +68,40 @@ public class Book {
 
 	public void setAuthors(Set<Author> authors) {
 		this.authors = authors;
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if ( this == o ) {
+			return true;
+		}
+		if ( o == null || getClass() != o.getClass() ) {
+			return false;
+		}
+
+		Book book = (Book) o;
+
+		if ( !isbn.equals( book.isbn ) ) {
+			return false;
+		}
+
+		return true;
+	}
+
+	@Override
+	public int hashCode() {
+		return isbn.hashCode();
+	}
+
+	@Override
+	public String toString() {
+		return "Book{" +
+				"id=" + id +
+				", title='" + title + '\'' +
+				", isbn='" + isbn + '\'' +
+				", publisher='" + publisher + '\'' +
+				", authors=" + authors +
+				'}';
 	}
 }
 
