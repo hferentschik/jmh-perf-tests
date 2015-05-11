@@ -28,11 +28,11 @@ questions.
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>org.hibernate.validator</groupId>
-    <artifactId>url-constraint-perf</artifactId>
+    <artifactId>hv-jmh-benchmarks</artifactId>
     <version>1.0</version>
     <packaging>jar</packaging>
 
-    <name>JMH benchmark for HV URL validation</name>
+    <name>JMH benchmarks for Hibernate Validator</name>
 
     <prerequisites>
         <maven>3.0</maven>
