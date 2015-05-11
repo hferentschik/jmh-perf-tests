@@ -142,27 +142,27 @@ public class SearchFacetingPerformance {
 		);
 	}
 
-	// just for testing in the IDE
-//	public static void main(String[] args) throws Exception {
-//		Options opt = new OptionsBuilder()
-//				.include( ".*" + SearchFacetingPerformance.class.getSimpleName() + ".*" )
-//				.build();
-//		new Runner( opt ).run();
-//	}
-
-	public static void main(String args[]) {
-		SearchFacetingPerformance performance = new SearchFacetingPerformance();
-		try {
-			performance.setUp();
-			performance.hsearchFaceting();
-			performance.luceneFaceting();
-			performance.tearDown();
-		}
-		catch ( Exception e ) {
-			System.err.println( e.getMessage() );
-			e.printStackTrace();
-		}
+	// for testing in the IDE
+	public static void main(String[] args) throws Exception {
+		Options opt = new OptionsBuilder()
+				.include( ".*" + SearchFacetingPerformance.class.getSimpleName() + ".*" )
+				.build();
+		new Runner( opt ).run();
 	}
+//
+//	public static void main(String args[]) {
+//		SearchFacetingPerformance performance = new SearchFacetingPerformance();
+//		try {
+//			performance.setUp();
+//			performance.hsearchFaceting();
+//			performance.luceneFaceting();
+//			performance.tearDown();
+//		}
+//		catch ( Exception e ) {
+//			System.err.println( e.getMessage() );
+//			e.printStackTrace();
+//		}
+//	}
 
 
 	private Configuration buildConfiguration() {
