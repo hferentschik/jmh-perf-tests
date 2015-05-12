@@ -149,21 +149,6 @@ public class SearchFacetingPerformance {
 				.build();
 		new Runner( opt ).run();
 	}
-//
-//	public static void main(String args[]) {
-//		SearchFacetingPerformance performance = new SearchFacetingPerformance();
-//		try {
-//			performance.setUp();
-//			performance.hsearchFaceting();
-//			performance.luceneFaceting();
-//			performance.tearDown();
-//		}
-//		catch ( Exception e ) {
-//			System.err.println( e.getMessage() );
-//			e.printStackTrace();
-//		}
-//	}
-
 
 	private Configuration buildConfiguration() {
 		Configuration cfg = new Configuration();
