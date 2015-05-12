@@ -16,11 +16,8 @@ jobs:
   out: manning-wesley.json
 - name: Wiley
   status: new
-  pages_downloaded: 0
+  pages_downloaded: 2317
   query:
     q: Wiley
     i: publisher_name
   out: manning-wesley.json
-
-
-
