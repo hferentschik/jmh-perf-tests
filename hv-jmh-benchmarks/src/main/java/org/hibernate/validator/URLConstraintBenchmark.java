@@ -113,13 +113,11 @@ public class URLConstraintBenchmark {
 		return validator.isValid( urlHolder.url );
 	}
 
-	// only working with a patched version of JMH which does not inspect the stack trace in Blackhole constructor
-	// to avoid direct instantiation
-//	@Benchmark
-//	@Fork(value = 1, jvmArgs = "-XX:-StackTraceInThrowable")
-//	public Object urlConstructorNoStackTraces(ValidateByURLConstructor validator, URLHolder urlHolder) {
-//		return validator.isValid( urlHolder.url );
-//	}
+	@Benchmark
+	@Fork(value = 1, jvmArgs = "-XX:-StackTraceInThrowable")
+	public Object urlConstructorNoStackTraces(ValidateByURLConstructor validator, URLHolder urlHolder) {
+		return validator.isValid( urlHolder.url );
+	}
 
 	@Benchmark
 	@Fork(value = 1, jvmArgs = "-XX:+PrintCompilation")
