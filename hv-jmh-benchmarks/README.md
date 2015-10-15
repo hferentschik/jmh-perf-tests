@@ -6,4 +6,4 @@
 
 ## How to run
 
-   java -jar target/benchmark.jar
+    java -jar target/benchmarks.jar
